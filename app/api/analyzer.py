@@ -18,3 +18,13 @@ def analyze_repository(request: RepoRequest):
         "status": "success",
         "data": repo_info
     }
+@router.post("/analyze/commits")
+def analyze_commits(request: RepoRequest):
+    """
+    Analyze commit patterns and contributors
+    """
+    commit_analysis = github_service.get_commit_analysis(request.repo_url)
+    return {
+        "status": "success",
+        "data": commit_analysis
+    }
