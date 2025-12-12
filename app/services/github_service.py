@@ -90,3 +90,54 @@ class GitHubService:
 
         except Exception as e:
             return {"error": str(e)}
+
+    def get_code_churn(self, repo_url: str, max_commits: int = 50):
+        """
+        Analyze code churn - lines added and deleted over time
+        """
+        try:
+            from datetime import timedelta
+
+            parts = repo_url.rstrip('/').split('/')
+            owner = parts[-2]
+            repo_name = parts[-1]
+
+            repo = self.client.get_repo(f"{owner}/{repo_name}")
+            commits = list(repo.get_commits()[:max_commits])
+
+            churn_data = []
+            total_additions = 0
+            total_deletions = 0
+
+            for commit in commits:
+                # Convert to IST
+                ist_time = commit.commit.author.date + timedelta(hours=5, minutes=30)
+
+                churn_data.append({
+                    "date": ist_time.strftime("%Y-%m-%d"),
+                    "time": ist_time.strftime("%H:%M"),
+                    "additions": commit.stats.additions,
+                    "deletions": commit.stats.deletions,
+                    "total_changes": commit.stats.total,
+                    "message": commit.commit.message.split('\n')[0][:50]  # First line, truncated
+                })
+
+                total_additions += commit.stats.additions
+                total_deletions += commit.stats.deletions
+
+            # Calculate average churn per commit
+            avg_additions = total_additions / len(commits) if commits else 0
+            avg_deletions = total_deletions / len(commits) if commits else 0
+
+            return {
+                "commits_analyzed": len(commits),
+                "total_additions": total_additions,
+                "total_deletions": total_deletions,
+                "net_change": total_additions - total_deletions,
+                "avg_additions_per_commit": round(avg_additions, 2),
+                "avg_deletions_per_commit": round(avg_deletions, 2),
+                "churn_timeline": churn_data[:10]  # Return last 10 for brevity
+            }
+
+        except Exception as e:
+            return {"error": str(e)}
