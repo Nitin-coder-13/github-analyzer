@@ -28,3 +28,13 @@ def analyze_commits(request: RepoRequest):
         "status": "success",
         "data": commit_analysis
     }
+@router.post("/analyze/churn")
+def analyze_code_churn(request: RepoRequest):
+    """
+    Analyze code churn - lines added and deleted over time
+    """
+    churn_analysis = github_service.get_code_churn(request.repo_url)
+    return {
+        "status": "success",
+        "data": churn_analysis
+    }
